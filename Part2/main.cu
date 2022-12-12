@@ -9,8 +9,8 @@
 
 // Image config
 const auto aspect_ratio = 1.0 / 1.0;
-const int image_width = 600;
-const int image_height = 600;
+const int image_width = 400;
+const int image_height = 400;
 const int samples_per_pixel = 300;
 const int max_depth = 50;
 
@@ -33,7 +33,7 @@ __global__ void init_material(Material** ground_material, Material** bottom_mate
     (*material1) = new Dielectric(1.5);
     (*material2) = new Lambertian(Vec3(0.4, 0.2, 0.1));
     (*material3) = new Metal(Vec3(0.7, 0.6, 0.5));
-    (*light_material) = new Diffuse_light(Vec3(4., 4., 4.));
+    (*light_material) = new Diffuse_light(Vec3(8., 8., 8.));
 }
 
 void init_scene() {
@@ -62,28 +62,28 @@ void init_scene() {
     world.push_back(new Sphere(Vec3( 4, 0.8, 0), 2, material3));
 
     // light
+    world.push_back(new Triangle(Vec3(4, 9.9, 4), Vec3(4, 9.9, -4), Vec3(-4, 9.9, -4), light_material));
     world.push_back(new Triangle(Vec3(4, 9.9, 4), Vec3(-4, 9.9, -4), Vec3(-4, 9.9, 4), light_material));
-    world.push_back(new Triangle(Vec3(4, 9.9, 4), Vec3(-4, 9.9, -4), Vec3(4, 9.9, -4), light_material));
 
     // 背景盒子
-    // bottom
-    world.push_back(new Triangle(Vec3(10, -10, 1), Vec3(-10, -10, -10), Vec3(-10, -10,  10), bottom_material));
-    world.push_back(new Triangle(Vec3(10, -10, 1), Vec3( 10, -10, -10), Vec3(-10, -10, -10), bottom_material));
     // top
-    world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(-10, 10, -10), Vec3(-10, 10,  10), ground_material));
-    world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(-10, 10, -10), Vec3( 10, 10, -10), ground_material));
+    world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(10, 10, -10), Vec3(-10, 10, -10), ground_material));
+    world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(-10, 10, -10), Vec3(-10, 10, 10), ground_material));
+    // bottom
+    world.push_back(new Triangle(Vec3(10, -10, 10), Vec3(10, -10, -10), Vec3(-10, -10, -10), bottom_material));
+    world.push_back(new Triangle(Vec3(10, -10, 10), Vec3(-10, -10, -10), Vec3(-10, -10, 10), bottom_material));
     // front
-    world.push_back(new Triangle(Vec3(10, -10, 10), Vec3(-10, 10, 10), Vec3(-10, -10, 10), ground_material));
-    world.push_back(new Triangle(Vec3(10, -10, 10), Vec3( 10, 10, 10), Vec3(-10,  10, 10), ground_material));
+    world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(10, -10, 10), Vec3(-10, -10, 10), ground_material));
+    world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(-10, -10, 10), Vec3(-10, 10, 10), ground_material));
     // back
-    world.push_back(new Triangle(Vec3(10, -10, -10), Vec3(-10, 10, -10), Vec3(-10, -10, -10), ground_material));
-    world.push_back(new Triangle(Vec3(10, -10, -10), Vec3( 10, 10, -10), Vec3(-10,  10, -10), ground_material));
+    world.push_back(new Triangle(Vec3(10, 10, -10), Vec3(10, -10, -10), Vec3(-10, -10, -10), ground_material));
+    world.push_back(new Triangle(Vec3(10, 10, -10), Vec3(-10, -10, -10), Vec3(-10, 10, -10), ground_material));
     // left
-    world.push_back(new Triangle(Vec3(-10, -10, -10), Vec3(-10, 10,  10), Vec3(-10, -10, 10), left_material));
-    world.push_back(new Triangle(Vec3(-10, -10, -10), Vec3(-10, 10, -10), Vec3(-10, 10, 10), left_material));
+    world.push_back(new Triangle(Vec3(-10, 10, 10), Vec3(-10, 10, -10), Vec3(-10, -10, -10), left_material));
+    world.push_back(new Triangle(Vec3(-10, 10, 10), Vec3(-10, -10, -10), Vec3(-10, -10, 10), left_material));
     // right
-    world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(10, -10, -10), Vec3(10, -10,  10), right_material));
-    world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(10, -10, -10), Vec3(10,  10, -10), right_material));
+    world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(10, 10, -10), Vec3(10, -10, -10), right_material));
+    world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(10, -10, -10), Vec3(10, -10, 10), right_material));
 }
 
 __global__ void init_random() {
@@ -93,7 +93,7 @@ __global__ void init_random() {
 
 __global__ void render(Bvh* bvh, Camera* cam, Vec3* red_d) {
     int i = blockIdx.x, j = blockIdx.y;
-    for (int turn = 0; turn < samples_per_pixel; turn++) {
+    for (int turn = 0; turn <= samples_per_pixel; turn++) {
         double u = (i + random_double()) / (gridDim.x - 1);
         double v = (j + random_double()) / (gridDim.y - 1);
 
@@ -113,6 +113,7 @@ __global__ void render(Bvh* bvh, Camera* cam, Vec3* red_d) {
                 flag = false;
                 break;
             }
+
             attenuationAcc = attenuationAcc * attenuation;
             r = scattered;
             depth--;
@@ -125,10 +126,9 @@ __global__ void render(Bvh* bvh, Camera* cam, Vec3* red_d) {
 int main() {
     double start = cpuSecond();
     freopen("figure.ppm", "w", stdout);
-    //freopen("test.txt", "w", stdout);
     cudaSetDevice(0);
 
-    dim3 gridDim(image_height, image_width);
+    dim3 gridDim(image_width, image_height);
     dim3 blockDim(1);
 
     cudaMalloc(&d_rng_states, image_height * image_width * sizeof(curandState));
@@ -149,6 +149,8 @@ int main() {
     Vec3* res_from_gpu = (Vec3*)malloc(nBytes);
     Vec3* res_d;
     cudaMalloc(&res_d, nBytes);
+
+    std::cerr << "rendering..." << std::endl;
 
     render <<<gridDim, blockDim>>> (bvh_world_d, cam_d, res_d);
     cudaDeviceSynchronize();

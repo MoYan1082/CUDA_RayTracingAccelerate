@@ -129,7 +129,7 @@ __device__ Vec3 random_in_unit_disk() {
 
 __device__ Vec3 random_in_unit_sphere() {
     while (true) {
-        auto p = random_Vec3();
+        auto p = random_Vec3(-1, 1);
         if (p.length_squared() >= 1) continue;
         return p;
     }

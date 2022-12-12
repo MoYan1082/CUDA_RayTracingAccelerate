@@ -26,8 +26,7 @@ public:
     __device__ virtual bool scatter(const Ray& r_in, 
         const HitPoint& rec, Vec3& attenuation, Ray& scattered) override 
     {
-        auto scatter_direction = rec.normal + random_in_unit_sphere() * random_double();
-
+        auto scatter_direction = rec.normal + random_unit_vector();
         // Catch degenerate scatter direction
         if (scatter_direction.near_zero())
             scatter_direction = rec.normal;

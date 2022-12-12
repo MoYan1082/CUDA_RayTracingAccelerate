@@ -20,7 +20,7 @@ public:
 
 class Triangle : public Shape {
 public:
-    Vec3 p1, p2, p3;
+    Vec3 p1, p2, p3; // ˳ʱ��
 
     Triangle() = delete;
     __device__ __host__ Triangle(Vec3 _p1, Vec3 _p2, Vec3 _p3, Material** _mtl)
@@ -34,27 +34,25 @@ public:
 
     __device__ virtual bool hit(Ray r_in, double t_min, double t_max, HitPoint& res) override {
         Vec3 normal = unit_vector(cross(p2 - p1, p3 - p1));
-        if (fabs(dot(normal, r_in.direction)) < EPS) // 射线和三角形平行
-            return false;
+        if (fabs(dot(normal, r_in.direction)) < EPS) return false;
         if (dot(normal, r_in.direction) > 0)
             normal = -normal;
 
         double t = (dot(normal, p1) - dot(r_in.origin, normal)) / dot(r_in.direction, normal);
         if (t <= t_min || t >= t_max) return false;
 
-
-        Vec3 P = r_in.origin + r_in.direction * t; // 交点
-        double tmp1 = dot(cross(p2 - p1, P - p1), normal); // 判断交点是否在三角形中
+        Vec3 P = r_in.at(t);
+        double tmp1 = dot(cross(p2 - p1, P - p1), normal);
         double tmp2 = dot(cross(p3 - p2, P - p2), normal);
         double tmp3 = dot(cross(p1 - p3, P - p3), normal);
         
         if (tmp1 > 0 && (tmp2 < 0 || tmp3 < 0)) return false;
         if (tmp1 < 0 && (tmp2 > 0 || tmp3 > 0)) return false;
 
-        res.p = P;
         res.t = t;
+        res.p = P;
         res.mtl = mtl;
-        res.normal = normal;
+        res.normal = unit_vector(normal);
 
         return true;
     };
@@ -97,7 +95,7 @@ public:
 
         Vec3 outward_normal = (res.p - center) / radius;
         res.set_face_normal(r_in, outward_normal);
-
+        res.normal = unit_vector(res.normal);
         return true;
     }
 };

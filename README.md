@@ -4,7 +4,7 @@ Part1 效果演示：
 
 ![example](./images/figure1.png)
 
-Part2 效果演示==TODO==：
+Part2 效果演示：
 
 ![example](./images/figure2.jpg)
 
@@ -33,6 +33,11 @@ make
 - 材质：漫反射、镜面反射、折射、光源。
 - 加速结构：BVH（方差建树、非递归搜索）。
 - 随机数：每个像素使用不同的随机数种子 `curand_uniform_double()`。
+
+#### :bulb:正在进行开发...
+
+- 重要性采样。
+- 纹理映射、环境光贴图。
 
 
 
