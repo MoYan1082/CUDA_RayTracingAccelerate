@@ -86,7 +86,7 @@ public:
     }
 
     __device__ bool hit(Ray r, double t_min, double t_max, HitPoint& rec) {
-        const int BVH_STACK_LIMIT = 128;
+        const int BVH_STACK_LIMIT = 1024 * 8;
         Bvh* nodes[BVH_STACK_LIMIT];
         int nodes_size = 0, ind = 0;
         nodes[nodes_size++] = this;

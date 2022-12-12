@@ -69,7 +69,7 @@ double cpuSecond() {
 }
 
 // Constants
-__managed__ double INF = std::numeric_limits<double>::infinity();
+__managed__ double INF = 1e18;
 __managed__ double PI = 3.1415926535897932385;
 __managed__ double EPS = 1e-8;
 

@@ -20,7 +20,7 @@ public:
 
 class Triangle : public Shape {
 public:
-    Vec3 p1, p2, p3; // À≥ ±’Î
+    Vec3 p1, p2, p3;
 
     Triangle() = delete;
     __device__ __host__ Triangle(Vec3 _p1, Vec3 _p2, Vec3 _p3, Material** _mtl)

@@ -6,6 +6,7 @@
 #include "include/camera.h"
 #include "include/shape.h"
 #include "include/material.h"
+#include "include/loader.h"
 
 // Image config
 const auto aspect_ratio = 1.0 / 1.0;
@@ -33,7 +34,7 @@ __global__ void init_material(Material** ground_material, Material** bottom_mate
     (*material1) = new Dielectric(1.5);
     (*material2) = new Lambertian(Vec3(0.4, 0.2, 0.1));
     (*material3) = new Metal(Vec3(0.7, 0.6, 0.5));
-    (*light_material) = new Diffuse_light(Vec3(8., 8., 8.));
+    (*light_material) = new Diffuse_light(Vec3(10., 10., 10.));
 }
 
 void init_scene() {
@@ -57,15 +58,20 @@ void init_scene() {
         material1, material2, material3,
         light_material);
 
-    world.push_back(new Sphere(Vec3( 0, -1, 0), 2, material1));
-    world.push_back(new Sphere(Vec3(-4, 0.5, 0), 1, material2));
-    world.push_back(new Sphere(Vec3( 4, 0.8, 0), 2, material3));
+    std::cerr << "loading model.." << std::endl;
+    std::vector<Triangle*> triangles = LoadObj("../models/rabbit.obj", material2);
+    for (auto it : triangles) world.push_back(it);
+    std::cerr << "model face: " << triangles.size() << std::endl;
+    
+    // sphere
+    world.push_back(new Sphere(Vec3(3.6, -4, 0), 2, material1));
+    // world.push_back(new Sphere(Vec3(-4, 0.5, 0), 1, material2));
+    world.push_back(new Sphere(Vec3(3.6, 2, 0), 2, material3));
 
+    // cornell box
     // light
     world.push_back(new Triangle(Vec3(4, 9.9, 4), Vec3(4, 9.9, -4), Vec3(-4, 9.9, -4), light_material));
     world.push_back(new Triangle(Vec3(4, 9.9, 4), Vec3(-4, 9.9, -4), Vec3(-4, 9.9, 4), light_material));
-
-    // 背景盒子
     // top
     world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(10, 10, -10), Vec3(-10, 10, -10), ground_material));
     world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(-10, 10, -10), Vec3(-10, 10, 10), ground_material));
@@ -113,20 +119,31 @@ __global__ void render(Bvh* bvh, Camera* cam, Vec3* red_d) {
                 flag = false;
                 break;
             }
-
             attenuationAcc = attenuationAcc * attenuation;
             r = scattered;
             depth--;
         }
-        if (flag) 
-            red_d[i * gridDim.y + j] += emitted * attenuationAcc;
+        if (flag) red_d[i * gridDim.y + j] += emitted * attenuationAcc;
     }
 }
 
 int main() {
+    std::cerr << GRN << "preparing..." << RESET << std::endl;
     double start = cpuSecond();
     freopen("figure.ppm", "w", stdout);
-    cudaSetDevice(0);
+
+    // initial device
+    int deviceCount;
+    CALL(cudaGetDeviceCount(&deviceCount));
+    if (deviceCount == 0) {
+        std::cerr << "There is no device." << std::endl;
+        return false;
+    }
+    int dev = 0;
+    cudaDeviceProp deviceProp;
+    CALL(cudaGetDeviceProperties(&deviceProp, dev));
+    std::cerr << "Using device " << dev << ": " << deviceProp.name << std::endl;
+    CALL(cudaSetDevice(dev));
 
     dim3 gridDim(image_width, image_height);
     dim3 blockDim(1);
@@ -134,6 +151,10 @@ int main() {
     cudaMalloc(&d_rng_states, image_height * image_width * sizeof(curandState));
     init_random <<<1, 1>>> ();
     cudaDeviceSynchronize();
+
+    // ================================================================================
+    // inital data
+    std::cerr << "The size of iamge: (" << image_width << "," << image_height << ")" << std::endl;
 
     // World
     init_scene();
@@ -150,22 +171,21 @@ int main() {
     Vec3* res_d;
     cudaMalloc(&res_d, nBytes);
 
-    std::cerr << "rendering..." << std::endl;
-
+    // ================================================================================
+    std::cerr << GRN << "parallel rendering..." << RESET << std::endl;
     render <<<gridDim, blockDim>>> (bvh_world_d, cam_d, res_d);
     cudaDeviceSynchronize();
-
     cudaMemcpy(res_from_gpu, res_d, nBytes, cudaMemcpyDeviceToHost);
-    // ================================================================================
-    // Render
+    
     std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
     for (int j = image_height - 1; j >= 0; --j) {
         for (int i = 0; i < image_width; ++i) {
             write_color(std::cout, res_from_gpu[i * image_width + j], samples_per_pixel);
         }
     }
+
     double finish = cpuSecond();
     int duration = (int)(finish - start);
-    std::cerr << "Time: " << duration / 60 << "min " << duration << "s" << std::endl;
+    std::cerr << GRN << "Time: " << duration / 60 << "min " << duration % 60 << "s" << RESET << std::endl;
     return 0;
 }
