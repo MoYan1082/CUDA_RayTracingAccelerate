@@ -1,8 +1,12 @@
 ## CUDA_RayTracingAccelerate
 
-效果演示（渲染时间为`9s`）：
+Part1 效果演示：
 
 ![example](./images/figure1.png)
+
+Part2 效果演示==TODO==：
+
+![example](./images/figure2.jpg)
 
 ### :computer:开发环境
 
@@ -14,7 +18,7 @@
 
 ```shell
 git clone https://github.com/MoYan1082/CUDA_RayTracingAccelerate.git
-cd CUDA_RayTracingAccelerate
+cd CUDA_RayTracingAccelerate/Part1
 mkdir build
 cmake ..
 make
@@ -25,10 +29,10 @@ make
 
 ### :milky_way:Features
 
-- 物体：圆球。
-- 材质：漫反射、镜面反射、折射。
-- BVH：方差建树、非递归搜索。
-- 随机数：每个像素以及每次采样都使用不同的随机数种子 `curand_uniform_double(curandState&)`。
+- 物体：圆球、三角形。
+- 材质：漫反射、镜面反射、折射、光源。
+- 加速结构：BVH（方差建树、非递归搜索）。
+- 随机数：每个像素使用不同的随机数种子 `curand_uniform_double()`。
 
 
 
