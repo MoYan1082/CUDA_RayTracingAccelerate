@@ -119,32 +119,12 @@ __device__ Vec3 random_Vec3(double min, double max) {
     return Vec3(random_double(min, max), random_double(min, max), random_double(min, max));
 }
 
-__device__ Vec3 random_in_unit_disk() {
-    while (true) {
-        auto p = Vec3(random_double(-1, 1), random_double(-1, 1), 0);
-        if (p.length_squared() >= 1) continue;
-        return p;
-    }
-}
-
-__device__ Vec3 random_in_unit_sphere() {
-    while (true) {
-        auto p = random_Vec3(-1, 1);
-        if (p.length_squared() >= 1) continue;
-        return p;
-    }
-}
-
 Vec3 random_Vec3_h() {
     return Vec3(random_double_h(), random_double_h(), random_double_h());
 }
 
 Vec3 random_Vec3_h(double min, double max) {
     return Vec3(random_double_h(min, max), random_double_h(min, max), random_double_h(min, max));
-}
-
-__device__ Vec3 random_unit_vector() {
-    return unit_vector(random_in_unit_sphere());
 }
 
 __device__ __host__ Vec3 reflect(const Vec3& v, const Vec3& n) {

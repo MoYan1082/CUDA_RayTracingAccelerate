@@ -89,7 +89,7 @@ __managed__ curandState* d_rng_states;
 
 // Returns a random real in [0,1).
 __device__ double random_double() {
-    int i = blockIdx.x, j = blockIdx.y;
+    int i = (blockIdx.x * blockDim.x) + threadIdx.x, j = blockIdx.y;
     int seed = i * gridDim.y + j;
     return curand_uniform_double(&(d_rng_states[seed]));
 }

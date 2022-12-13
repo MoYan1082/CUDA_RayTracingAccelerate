@@ -39,7 +39,7 @@ public:
             normal = -normal;
 
         double t = (dot(normal, p1) - dot(r_in.origin, normal)) / dot(r_in.direction, normal);
-        if (t <= t_min || t >= t_max) return false;
+        if (t < t_min || t > t_max) return false;
 
         Vec3 P = r_in.at(t);
         double tmp1 = dot(cross(p2 - p1, P - p1), normal);
@@ -83,9 +83,9 @@ public:
 
         // Find the nearest root that lies in the acceptable range.
         auto root = (-half_b - sqrtd) / a;
-        if (root <= t_min || root >= t_max) {
+        if (root < t_min || root > t_max) {
             root = (-half_b + sqrtd) / a;
-            if (root <= t_min || root >= t_max)
+            if (root < t_min || root > t_max)
                 return false;
         }
 

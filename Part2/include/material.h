@@ -6,6 +6,8 @@
 #include "ray.h"
 #include "hit.h"
 
+#include <cmath>
+
 class Material {
 public:
     __device__ virtual bool scatter(const Ray& r_in,
@@ -23,17 +25,29 @@ public:
 
     __device__ __host__ Lambertian(const Vec3& a) : albedo(a) {}
 
-    __device__ virtual bool scatter(const Ray& r_in, 
+    __device__ virtual bool scatter(const Ray& r_in,
         const HitPoint& rec, Vec3& attenuation, Ray& scattered) override 
     {
-        auto scatter_direction = rec.normal + random_unit_vector();
-        // Catch degenerate scatter direction
-        if (scatter_direction.near_zero())
-            scatter_direction = rec.normal;
+        Vec3 scatter_direction = unit_vector(rec.normal) + SampleCosineHemisphere();
+        if (scatter_direction.near_zero()) scatter_direction = rec.normal;
+
+        double pdf = dot(unit_vector(scatter_direction), rec.normal) / PI;
 
         scattered = Ray(rec.p, scatter_direction);
         attenuation = albedo;
         return true;
+    }
+private:
+    __device__ Vec3 SampleCosineHemisphere() { 
+        // Malley’s Method
+        double xi_1 = random_double(), xi_2 = random_double();
+        double r = std::sqrt(xi_1);
+        double theta = xi_2 * 2.0 * PI;
+        double x = r * std::cos(theta);
+        double y = r * std::sin(theta);
+        double z = std::sqrt(1.0 - x*x - y*y);
+
+        return Vec3(x, y, z);
     }
 };
 
@@ -100,5 +114,4 @@ public:
         return true;
     }
 };
-
 #endif // MATERIAL_H

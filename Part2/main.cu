@@ -10,16 +10,16 @@
 
 // Image config
 const auto aspect_ratio = 1.0 / 1.0;
-const int image_width = 400;
-const int image_height = 400;
-const int samples_per_pixel = 300;
-const int max_depth = 50;
+const int image_width = 512;
+const int image_height = 512;
+const int samples_per_pixel = 3000;
+const int max_depth = 4;
 
 // Camera config
-Vec3 lookfrom(0, 0, 9);
+Vec3 lookfrom(0, 0, 9.9);
 Vec3 lookat(0, 0, 0);
 Vec3 vup(0, 1, 0);
-Camera* cam_h = new Camera(lookfrom, lookat, vup, 80, aspect_ratio);
+Camera* cam_h = new Camera(lookfrom, lookat, vup, 89, aspect_ratio);
 
 std::vector<Shape*> world;
 
@@ -27,14 +27,14 @@ __global__ void init_material(Material** ground_material, Material** bottom_mate
     Material** material1, Material** material2, Material** material3,
     Material** light_material) 
 {
-    (*ground_material) = new Lambertian(Vec3(0.5, 0.5, 0.5));
-    (*bottom_material) = new Lambertian(Vec3(0.5, 0.5, 0.5));
-    (*left_material)   = new Lambertian(Vec3(0, 0.8, 0));
-    (*right_material)  = new Lambertian(Vec3(0.8, 0, 0));
+    (*ground_material) = new Lambertian(Vec3(.73, .73, .73));
+    (*bottom_material) = new Lambertian(Vec3(.73, .73, .73));
+    (*left_material)   = new Lambertian(Vec3(.12, .45, .15));
+    (*right_material)  = new Lambertian(Vec3(.65, .05, .05));
     (*material1) = new Dielectric(1.5);
     (*material2) = new Lambertian(Vec3(0.4, 0.2, 0.1));
     (*material3) = new Metal(Vec3(0.7, 0.6, 0.5));
-    (*light_material) = new Diffuse_light(Vec3(10., 10., 10.));
+    (*light_material) = new Diffuse_light(Vec3(15, 15, 15));
 }
 
 void init_scene() {
@@ -64,14 +64,14 @@ void init_scene() {
     std::cerr << "model face: " << triangles.size() << std::endl;
     
     // sphere
-    world.push_back(new Sphere(Vec3(3.6, -4, 0), 2, material1));
-    // world.push_back(new Sphere(Vec3(-4, 0.5, 0), 1, material2));
-    world.push_back(new Sphere(Vec3(3.6, 2, 0), 2, material3));
+    // world.push_back(new Sphere(Vec3(-3.6, 2.5, 0), 2, material1)); // Dielectric
+    // world.push_back(new Sphere(Vec3(-3.6, 2.5, 0), -1.5, material1)); 
+    // world.push_back(new Sphere(Vec3( 3.6, 2.5, 0), 2, material3)); // metal
 
     // cornell box
     // light
-    world.push_back(new Triangle(Vec3(4, 9.9, 4), Vec3(4, 9.9, -4), Vec3(-4, 9.9, -4), light_material));
-    world.push_back(new Triangle(Vec3(4, 9.9, 4), Vec3(-4, 9.9, -4), Vec3(-4, 9.9, 4), light_material));
+    world.push_back(new Triangle(Vec3(2, 9.9, 2), Vec3(2, 9.9, -2), Vec3(-2, 9.9, -2), light_material));
+    world.push_back(new Triangle(Vec3(2, 9.9, 2), Vec3(-2, 9.9, -2), Vec3(-2, 9.9, 2), light_material));
     // top
     world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(10, 10, -10), Vec3(-10, 10, -10), ground_material));
     world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(-10, 10, -10), Vec3(-10, 10, 10), ground_material));
@@ -98,9 +98,10 @@ __global__ void init_random() {
 }
 
 __global__ void render(Bvh* bvh, Camera* cam, Vec3* red_d) {
-    int i = blockIdx.x, j = blockIdx.y;
+    int i = (blockIdx.x * blockDim.x) + threadIdx.x, j = blockIdx.y;
+    Vec3 color_res(0, 0, 0);
     for (int turn = 0; turn <= samples_per_pixel; turn++) {
-        double u = (i + random_double()) / (gridDim.x - 1);
+        double u = (i + random_double()) / ((gridDim.x * blockDim.x) - 1);
         double v = (j + random_double()) / (gridDim.y - 1);
 
         Ray r = cam->get_ray(u, v);
@@ -115,7 +116,7 @@ __global__ void render(Bvh* bvh, Camera* cam, Vec3* red_d) {
             Ray scattered;
             Vec3 attenuation;
             if (!(*(hitPoint.mtl))->scatter(r, hitPoint, attenuation, scattered)) {
-                red_d[i * gridDim.y + j] += Vec3(0., 0., 0.);
+                color_res += Vec3(0., 0., 0.);
                 flag = false;
                 break;
             }
@@ -123,8 +124,9 @@ __global__ void render(Bvh* bvh, Camera* cam, Vec3* red_d) {
             r = scattered;
             depth--;
         }
-        if (flag) red_d[i * gridDim.y + j] += emitted * attenuationAcc;
+        if (flag) color_res += emitted * attenuationAcc;
     }
+    red_d[i * gridDim.y + j] = color_res;
 }
 
 int main() {
@@ -145,8 +147,9 @@ int main() {
     std::cerr << "Using device " << dev << ": " << deviceProp.name << std::endl;
     CALL(cudaSetDevice(dev));
 
-    dim3 gridDim(image_width, image_height);
-    dim3 blockDim(1);
+    int thread_num = 64;
+    dim3 gridDim(image_width/thread_num, image_height);
+    dim3 blockDim(1*thread_num);
 
     cudaMalloc(&d_rng_states, image_height * image_width * sizeof(curandState));
     init_random <<<1, 1>>> ();
