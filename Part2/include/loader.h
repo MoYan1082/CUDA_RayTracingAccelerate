@@ -68,7 +68,7 @@ std::vector<Triangle*> LoadObj(std::string filepath, Material** material) {
     double lenz = maxzd - minzd;
     double maxaxis = max(lenx, max(leny, lenz));
 
-    double scale = 10;
+    double scale = 8;
     for (auto& v : vertices) {
         v[0] /= maxaxis;
         v[1] /= maxaxis;
@@ -78,9 +78,9 @@ std::vector<Triangle*> LoadObj(std::string filepath, Material** material) {
         v[1] *= scale;
         v[2] *= scale;
         
-        v[0] += 1.5;
-        v[1] -= 7;
-        v[2] -= 4;
+        v[0] += 1;
+        v[1] -= 4;
+        v[2] -= 2;
     }
 
     for (int i = 0; i < indices.size(); i += 3) {

@@ -28,7 +28,7 @@ public:
     __device__ virtual bool scatter(const Ray& r_in,
         const HitPoint& rec, Vec3& attenuation, Ray& scattered) override 
     {
-        Vec3 scatter_direction = unit_vector(rec.normal) + SampleCosineHemisphere();
+        Vec3 scatter_direction = unit_vector(rec.normal) + toNormalHemisphere(SampleCosineHemisphere(), rec.normal);
         if (scatter_direction.near_zero()) scatter_direction = rec.normal;
 
         double pdf = dot(unit_vector(scatter_direction), rec.normal) / PI;
@@ -48,6 +48,14 @@ private:
         double z = std::sqrt(1.0 - x*x - y*y);
 
         return Vec3(x, y, z);
+    }
+    __device__ Vec3 toNormalHemisphere(Vec3 v, Vec3 N) {
+        // 将向量 v 投影到 N 的法向半球
+        Vec3 helper = Vec3(1, 0, 0);
+        if(std::abs(N[0]) > 0.999) helper = Vec3(0, 0, 1);
+        Vec3 tangent = unit_vector(cross(N, helper));
+        Vec3 bitangent = unit_vector(cross(N, tangent));
+        return v[0] * tangent + v[1] * bitangent + v[2] * N;
     }
 };
 

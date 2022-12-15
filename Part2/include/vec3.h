@@ -65,9 +65,11 @@ __device__ __host__ Vec3 operator*(double t, const Vec3& v) {
 __device__ __host__ Vec3 operator*(const Vec3& v, double t) {
     return t * v;
 }
-
 __device__ __host__ Vec3 operator/(Vec3 v, double t) {
     return (1 / t) * v;
+}
+__device__ __host__ Vec3 operator+(const Vec3& v, double t) {
+    return Vec3(v[0] + t, v[1] + t, v[2] + t);
 }
 
 __device__ __host__ double dot(const Vec3& u, const Vec3& v) {
@@ -101,9 +103,12 @@ void write_color(std::ostream& out, Vec3 pixel_color, int samples_per_pixel) {
     auto g = pixel_color.y();
     auto b = pixel_color.z();
 
-    r /= samples_per_pixel;
-    g /= samples_per_pixel;
-    b /= samples_per_pixel;
+    // Divide the color by the number of samples and gamma-correct for gamma=2.0.
+    auto scale = 1.0 / samples_per_pixel;
+    r = sqrt(scale * r);
+    g = sqrt(scale * g);
+    b = sqrt(scale * b);
+
 
     // Write the translated [0,255] value of each color component.
     out << static_cast<int>(256 * clamp(r, 0.0, 0.999)) << ' '
