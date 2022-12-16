@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.9 FATAL_ERROR)
+Project(CUDA_RayTracing CXX C CUDA)
+include_directories(./include)
+include_directories(./external)
+add_executable(main main.cu)

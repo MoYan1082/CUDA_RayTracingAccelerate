@@ -7,20 +7,16 @@
 #include "include/shape.h"
 #include "include/material.h"
 #include "include/loader.h"
-#include "external/hdrloader.h"
 
 // Image config
 const auto aspect_ratio = 1.0 / 1.0;
 const int image_width = 512;
 const int image_height = 512;
-const int samples_per_pixel = 1000;
+const int samples_per_pixel = 3000;
 const int max_depth = 4;
 
-const int hdr_width = 4096;
-const int hdr_height = 2048;
-
 // Camera config
-Vec3 lookfrom(0, 0, 25);
+Vec3 lookfrom(0, 0, 35);
 Vec3 lookat(0, 0, 0);
 Vec3 vup(0, 1, 0);
 Camera* cam_h = new Camera(lookfrom, lookat, vup, 60, aspect_ratio);
@@ -73,11 +69,11 @@ void init_scene() {
 
     // cornell box
     // light
-    world.push_back(new Triangle(Vec3(2, 9.9, 2), Vec3(2, 9.9, -2), Vec3(-2, 9.9, -2), light_material));
-    world.push_back(new Triangle(Vec3(2, 9.9, 2), Vec3(-2, 9.9, -2), Vec3(-2, 9.9, 2), light_material));
+    // world.push_back(new Triangle(Vec3(2, 9.9, 2), Vec3(2, 9.9, -2), Vec3(-2, 9.9, -2), light_material));
+    // world.push_back(new Triangle(Vec3(2, 9.9, 2), Vec3(-2, 9.9, -2), Vec3(-2, 9.9, 2), light_material));
     // top
-    world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(10, 10, -10), Vec3(-10, 10, -10), ground_material));
-    world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(-10, 10, -10), Vec3(-10, 10, 10), ground_material));
+    // world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(10, 10, -10), Vec3(-10, 10, -10), ground_material));
+    // world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(-10, 10, -10), Vec3(-10, 10, 10), ground_material));
     // bottom
     world.push_back(new Triangle(Vec3(10, -10, 10), Vec3(10, -10, -10), Vec3(-10, -10, -10), bottom_material));
     world.push_back(new Triangle(Vec3(10, -10, 10), Vec3(-10, -10, -10), Vec3(-10, -10, 10), bottom_material));
@@ -85,14 +81,14 @@ void init_scene() {
     // world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(10, -10, 10), Vec3(-10, -10, 10), ground_material));
     // world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(-10, -10, 10), Vec3(-10, 10, 10), ground_material));
     // back
-    world.push_back(new Triangle(Vec3(10, 10, -10), Vec3(10, -10, -10), Vec3(-10, -10, -10), ground_material));
-    world.push_back(new Triangle(Vec3(10, 10, -10), Vec3(-10, -10, -10), Vec3(-10, 10, -10), ground_material));
+    // world.push_back(new Triangle(Vec3(10, 10, -10), Vec3(10, -10, -10), Vec3(-10, -10, -10), ground_material));
+    // world.push_back(new Triangle(Vec3(10, 10, -10), Vec3(-10, -10, -10), Vec3(-10, 10, -10), ground_material));
     // left
-    world.push_back(new Triangle(Vec3(-10, 10, 10), Vec3(-10, 10, -10), Vec3(-10, -10, -10), left_material));
-    world.push_back(new Triangle(Vec3(-10, 10, 10), Vec3(-10, -10, -10), Vec3(-10, -10, 10), left_material));
+    // world.push_back(new Triangle(Vec3(-10, 10, 10), Vec3(-10, 10, -10), Vec3(-10, -10, -10), left_material));
+    // world.push_back(new Triangle(Vec3(-10, 10, 10), Vec3(-10, -10, -10), Vec3(-10, -10, 10), left_material));
     // right
-    world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(10, 10, -10), Vec3(10, -10, -10), right_material));
-    world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(10, -10, -10), Vec3(10, -10, 10), right_material));
+    // world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(10, 10, -10), Vec3(10, -10, -10), right_material));
+    // world.push_back(new Triangle(Vec3(10, 10, 10), Vec3(10, -10, -10), Vec3(10, -10, 10), right_material));
 }
 
 __global__ void init_random() {
@@ -100,16 +96,15 @@ __global__ void init_random() {
         curand_init(seed, 0, 0, &(d_rng_states[seed]));
 }
 
+__device__ void get_sphere_uv(const Vec3 p, double& u, double& v) {
+    double theta = acos(-p.y());
+    double phi = atan2(-p.z(), p.x()) + PI;
 
-// __device__ Vec3 SampleSphericalMap(Vec3 v) {
-//     // 将三维向量 v 转为 HDR map 的纹理坐标 uv
-//     Vec3 uv = Vec3(atan(v[2]/v[0])/(2.0*PI), asin(v[1])/PI, 0);
-//     uv = uv + 0.5;
-//     uv[1] = 1.0 - uv[1];
-//     return uv;
-// }
+    u = phi / (2 * PI);
+    v = theta / PI;
+}
 
-__global__ void render(Bvh* bvh, Camera* cam, float* hdr_data_d, Vec3* red_d) {
+__global__ void render(Bvh* bvh, Texture* hdr_texture_d, Camera* cam, Vec3* red_d) {
     int i = (blockIdx.x * blockDim.x) + threadIdx.x, j = blockIdx.y;
     Vec3 color_res(0, 0, 0);
     for (int turn = 0; turn <= samples_per_pixel; turn++) {
@@ -125,15 +120,9 @@ __global__ void render(Bvh* bvh, Camera* cam, float* hdr_data_d, Vec3* red_d) {
         bool flag = true;
         while (depth > 0) {
             if(!bvh->hit(r, 0.001, INF, hitPoint)) {
-                // Vec3 uv = SampleSphericalMap(unit_vector(r.direction));
-                // int u = static_cast<int>(uv[0] * hdr_width);
-                // int v = static_cast<int>(uv[1] * hdr_height);
-                // if (i >= hdr_width)  i = hdr_width - 1;
-                // if (j >= hdr_height) j = hdr_height - 1;
-
-                // int ind = (u * hdr_height + v) * 3;
-                // emitted = Vec3(hdr_data_d[ind], hdr_data_d[ind + 1], hdr_data_d[ind + 2]);
-                emitted = Vec3(0, 0, 0);
+                double u, v;
+                get_sphere_uv(unit_vector(r.direction), u, v);
+                emitted = hdr_texture_d->value(u, v);
                 break;
             }
             if ((*(hitPoint.mtl))->emit(emitted)) break;
@@ -194,18 +183,10 @@ int main() {
     cudaMemcpy(cam_d, cam_h, sizeof(Camera), cudaMemcpyHostToDevice);
 
     // hdr
-    HDRLoaderResult hdrRes;
-    bool r = HDRLoader::load("../resources/thatch_chapel_4k.hdr", hdrRes);
-    if(!r) assert(false);
-    std::cerr << "The size of hdr: (" << hdrRes.width << "," << hdrRes.height << ")" << std::endl;
-    assert(hdr_width == hdrRes.width);
-    assert(hdr_height == hdrRes.height);
-
-    int hdr_nBytes = sizeof(float) * hdrRes.width * hdrRes.height * 3;
-    float* hdr_data_d;
-    cudaMalloc(&hdr_data_d, hdr_nBytes);
-    cudaMemcpy(hdr_data_d, hdrRes.cols, hdr_nBytes, cudaMemcpyHostToDevice);
-
+    Texture* hdr_texture_h = new Texture("../resources/BG2.jpg");
+    Texture* hdr_texture_d = ToDevice(hdr_texture_h);
+    
+    // image data
     int nBytes = sizeof(Vec3) * image_width * image_height;
     Vec3* res_from_gpu = (Vec3*)malloc(nBytes);
     Vec3* res_d;
@@ -213,14 +194,14 @@ int main() {
 
     // ================================================================================
     std::cerr << GRN << "parallel rendering..." << RESET << std::endl;
-    render <<<gridDim, blockDim>>> (bvh_world_d, cam_d, hdr_data_d, res_d);
+    render <<<gridDim, blockDim>>> (bvh_world_d, hdr_texture_d, cam_d, res_d);
     cudaDeviceSynchronize();
     cudaMemcpy(res_from_gpu, res_d, nBytes, cudaMemcpyDeviceToHost);
-    
+
     std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
     for (int j = image_height - 1; j >= 0; --j) {
         for (int i = 0; i < image_width; ++i) {
-            write_color(std::cout, res_from_gpu[i * image_width + j], samples_per_pixel);
+            write_color(std::cout, res_from_gpu[i * image_height + j], samples_per_pixel);
         }
     }
 

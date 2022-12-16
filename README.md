@@ -6,7 +6,7 @@ Part1 效果演示：
 
 Part2 效果演示：
 
-![example](./images/figure2.jpg)
+![example](./images/figure2.jpg)![example](./images/figure3.jpg)
 
 ### :computer:开发环境
 
@@ -33,13 +33,13 @@ make
 - 材质：漫反射、镜面反射、折射、光源。
 - 漫反射重要性采样（Malley’s Method）。
 - 加速结构：BVH（方差建树、非递归搜索）。
+- 环境光贴图。
 - 随机数：每个像素使用不同的随机数种子 `curand_uniform_double()`。
 
 #### :bulb:正在进行开发...
 
 - BRDF重要性采样。
-- 纹理映射、环境光贴图。
-- BUG：场景亮度、球体变形。
+- 纹理映射。
 
 
 
