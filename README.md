@@ -36,7 +36,7 @@ make
 - 环境光贴图。
 - 随机数：每个像素使用不同的随机数种子 `curand_uniform_double()`。
 
-#### :bulb:正在进行开发...
+#### :bulb:TODO
 
 - BRDF重要性采样。
 - 纹理映射。
