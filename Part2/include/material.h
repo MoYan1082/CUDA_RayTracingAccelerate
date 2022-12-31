@@ -52,7 +52,8 @@ private:
     __device__ Vec3 toNormalHemisphere(Vec3 v, Vec3 N) {
         // 将向量 v 投影到 N 的法向半球
         Vec3 helper = Vec3(1, 0, 0);
-        if(std::abs(N[0]) > 0.999) helper = Vec3(0, 0, 1);
+        if(std::abs(N[0]) > 0.999)
+            return v;
         Vec3 tangent = unit_vector(cross(N, helper));
         Vec3 bitangent = unit_vector(cross(N, tangent));
         return v[0] * tangent + v[1] * bitangent + v[2] * N;

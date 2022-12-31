@@ -6,7 +6,13 @@ Part1 效果演示：
 
 Part2 效果演示：
 
-![example](./images/figure2.jpg)![example](./images/figure3.jpg)
+![](./images/figure2.jpg)
+
+![example](./images/figure3.jpg)
+
+Part3 效果演示：
+
+![example](./images/figure4.jpg)
 
 ### :computer:开发环境
 
@@ -30,15 +36,15 @@ make
 ### :milky_way:Features
 
 - 物体：圆球、三角形（.obj格式模型）。
-- 材质：漫反射、镜面反射、折射、光源。
-- 漫反射重要性采样（Malley’s Method）。
+- 材质：漫反射、镜面反射、折射、光源、迪士尼原则的BRDF。
 - 加速结构：BVH（方差建树、非递归搜索）。
 - 环境光贴图。
 - 随机数：每个像素使用不同的随机数种子 `curand_uniform_double()`。
 
 #### :bulb:TODO
 
-- BRDF重要性采样。
+- 重要性采样。
+- 低差异序列化。
 - 纹理映射。
 
 
